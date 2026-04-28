@@ -167,10 +167,9 @@ function parsePythonDict(str: string): any {
   // Convert Python dict syntax to JSON
   let s = str;
 
-  // Step 1: Handle Python raw strings or double-double-quotes (from CSV export)
-  // "" inside a Python string represents an escaped double quote
-  // First, normalize: treat double-double-quotes as escaped quotes
-  s = s.replace(/""/g, '\\"');
+  // Step 1: If the user copied directly from a raw CSV cell, CSV stores
+  // literal quote characters as doubled quotes. Restore that CSV layer first.
+  s = s.replace(/""/g, '"');
 
   // Step 2: Replace Python literals
   s = s.replace(/\bTrue\b/g, 'true');
