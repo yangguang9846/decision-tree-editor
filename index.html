@@ -14,10 +14,13 @@
       // GitHub Pages SPA 路由修复
       // 仅在从 404.html 回跳时恢复原始路径；路由前缀由 wouter 的 base 处理
       (function() {
+        var base = '/decision-tree-editor';
         var redirect = sessionStorage.getItem('spa_redirect');
-        if (redirect) {
+        if (redirect && (redirect === base || redirect.indexOf(base + '/') === 0)) {
           sessionStorage.removeItem('spa_redirect');
           window.history.replaceState(null, '', redirect);
+        } else if (redirect) {
+          sessionStorage.removeItem('spa_redirect');
         }
       })();
     </script>
