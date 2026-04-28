@@ -10,9 +10,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/decision-tree-editor/assets/index-CiaCVMkQ.js"></script>
-    <link rel="stylesheet" crossorigin href="/decision-tree-editor/assets/index-Dw_U5iEw.css">
-    
     <script>
       // GitHub Pages SPA 路由修复
       // wouter 路由库的 base 默认为 ""，部署在子路径 /decision-tree-editor/ 时
@@ -39,6 +36,8 @@
         }
       })();
     </script>
+    <script type="module" crossorigin src="/decision-tree-editor/assets/index-DYKWOdci.js"></script>
+    <link rel="stylesheet" crossorigin href="/decision-tree-editor/assets/index-WMCF03cD.css">
   </head>
 
   <body>
@@ -105,8 +104,8 @@ Error generating stack: `+l.message+`
     <div id="root"></div>
     <script
       defer
-      src="https://manus-analytics.com/umami"
-      data-website-id="912229e8-1e55-4224-8de7-143393fb9c4e"></script>
+      src="%VITE_ANALYTICS_ENDPOINT%/umami"
+      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
   </body>
 
 </html>

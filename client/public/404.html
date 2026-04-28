@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting...</title>
+    <script>
+      // GitHub Pages SPA 路由重定向
+      // 当用户直接访问子路径时，GitHub Pages 会返回此 404.html。
+      // 将完整路径保存到 sessionStorage，然后重定向到 index.html，
+      // 由 index.html 中的脚本恢复原始路径。
+      (function() {
+        var base = '/decision-tree-editor';
+        var path = window.location.pathname;
+        var search = window.location.search;
+        var hash = window.location.hash;
+
+        // 将当前完整路径保存到 sessionStorage
+        sessionStorage.setItem('spa_redirect', path + search + hash);
+
+        // 重定向到 base 路径的 index.html
+        window.location.replace(base + '/');
+      })();
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
