@@ -12,27 +12,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <script>
       // GitHub Pages SPA 路由修复
-      // wouter 路由库的 base 默认为 ""，部署在子路径 /decision-tree-editor/ 时
-      // 需要在应用启动前将 URL 路径规范化，使 wouter 能正确匹配路由规则
+      // 仅在从 404.html 回跳时恢复原始路径；路由前缀由 wouter 的 base 处理
       (function() {
-        var base = '/decision-tree-editor';
-
-        // 步骤 1：如果是从 404.html 跳转过来的，恢复原始路径
         var redirect = sessionStorage.getItem('spa_redirect');
         if (redirect) {
           sessionStorage.removeItem('spa_redirect');
           window.history.replaceState(null, '', redirect);
-        }
-
-        // 步骤 2：将 URL 路径规范化（去掉 base 前缀），使 wouter 能正确匹配路由
-        var path = window.location.pathname;
-        if (path.indexOf(base) === 0) {
-          var newPath = path.slice(base.length) || '/';
-          window.history.replaceState(
-            window.history.state,
-            '',
-            newPath + window.location.search + window.location.hash
-          );
         }
       })();
     </script>

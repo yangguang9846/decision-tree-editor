@@ -7,8 +7,8 @@
     <script>
       // GitHub Pages SPA 路由重定向
       // 当用户直接访问子路径时，GitHub Pages 会返回此 404.html。
-      // 将完整路径保存到 sessionStorage，然后重定向到 index.html，
-      // 由 index.html 中的脚本恢复原始路径。
+      // 将完整路径保存到 sessionStorage，然后重定向到入口页；
+      // 入口页会恢复原始路径，wouter 的 base 负责匹配子路径。
       (function() {
         var base = '/decision-tree-editor';
         var path = window.location.pathname;
