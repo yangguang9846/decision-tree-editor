@@ -11,6 +11,7 @@ export interface TreeNode {
 export interface TreeData {
   platform_feats: string[];
   game_feats: string[];
+  fallback?: string;
   decision_tree: TreeNode | null;
 }
 
@@ -95,6 +96,7 @@ export function treeToDict(treeData: TreeData): string {
   const finalObj = {
     platform_feats: treeData.platform_feats || [],
     game_feats: treeData.game_feats || [],
+    fallback: treeData.fallback || '',
     decision_tree: nodeToObj(treeData.decision_tree)
   };
 
@@ -146,6 +148,7 @@ export function dictToTree(dictStr: string): TreeData | null {
     return {
       platform_feats: obj.platform_feats || [],
       game_feats: obj.game_feats || [],
+      fallback: obj.fallback || '',
       decision_tree: objToTree(treeObj)
     };
   } catch (error) {

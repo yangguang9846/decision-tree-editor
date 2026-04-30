@@ -41,6 +41,7 @@ export function createExampleTree(): TreeData {
   return {
     platform_feats: ['channel_id', 'has_name&profile_change_history', 'name&profile_audit_status'],
     game_feats: ['has_rename_card'],
+    fallback: '当前信息暂时不足，无法继续判断，请转人工客服协助确认。',
     decision_tree: root
   };
 }
