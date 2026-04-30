@@ -377,8 +377,8 @@ export default function Home() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-cyan-400" style={{ fontFamily: 'Poppins, sans-serif' }}>Python Dict</h3>
                 <div className="flex items-center gap-1">
-                  <Button onClick={handleCopyCode} size="sm" className="bg-cyan-500 hover:bg-cyan-600 text-xs h-7 px-2">
-                    <Copy size={12} className="mr-1" />复制
+                  <Button onClick={handleCopyCode} size="sm" className="bg-cyan-500 hover:bg-cyan-600 text-xs h-7 min-w-20 px-3">
+                    <Copy size={12} className="mr-1" />复制代码
                   </Button>
                   <Button onClick={() => setShowCodePreview(false)} size="sm" variant="ghost" className="text-slate-400 hover:text-slate-200 h-7 w-7 p-0">✕</Button>
                 </div>
