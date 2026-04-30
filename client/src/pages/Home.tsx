@@ -5,6 +5,7 @@ import { TreeVisualizer } from '@/components/TreeVisualizer';
 import { NodeEditDialog } from '@/components/NodeEditDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Copy, Download, Plus, RefreshCw, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ export default function Home() {
   const [tree, setTree] = useState<TreeNode | null>(null);
   const [platformFeats, setPlatformFeats] = useState<string[]>([]);
   const [gameFeats, setGameFeats] = useState<string[]>([]);
+  const [fallback, setFallback] = useState('');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showCodePreview, setShowCodePreview] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -30,6 +32,7 @@ export default function Home() {
     setTree(newTree);
     setPlatformFeats([]);
     setGameFeats([]);
+    setFallback('');
     setSelectedNodeId(newTree.id);
     setShowCodePreview(false);
     toast.success('已创建新的决策树');
@@ -40,6 +43,7 @@ export default function Home() {
     setTree(exampleData.decision_tree);
     setPlatformFeats(exampleData.platform_feats);
     setGameFeats(exampleData.game_feats);
+    setFallback(exampleData.fallback || '');
     setSelectedNodeId(exampleData.decision_tree?.id || null);
     setShowCodePreview(false);
     toast.success('已加载示例决策树');
@@ -118,6 +122,7 @@ export default function Home() {
   const treeData: TreeData = {
     platform_feats: platformFeats,
     game_feats: gameFeats,
+    fallback,
     decision_tree: tree
   };
   const dictCode = tree ? treeToDict(treeData) : '';
@@ -139,6 +144,7 @@ export default function Home() {
         setTree(importedData.decision_tree);
         setPlatformFeats(importedData.platform_feats);
         setGameFeats(importedData.game_feats);
+        setFallback(importedData.fallback || '');
         setSelectedNodeId(importedData.decision_tree.id || null);
         setImportDialogOpen(false);
         setImportCode('');
@@ -277,7 +283,7 @@ export default function Home() {
             </div>
 
             {/* 游戏特征列表 */}
-            <div>
+            <div className="mb-4">
               <label className="text-xs font-semibold text-slate-400 block mb-2">Game Feat List</label>
               <div className="flex flex-wrap gap-1 mb-2">
                 {gameFeats.map((f, i) => (
@@ -298,6 +304,17 @@ export default function Home() {
                 />
                 <Button onClick={addGameFeat} size="sm" className="h-7 px-2 bg-purple-500 hover:bg-purple-600 text-xs">+</Button>
               </div>
+            </div>
+
+            {/* 判断失败默认回复 */}
+            <div>
+              <label className="text-xs font-semibold text-slate-400 block mb-2">Fallback</label>
+              <Textarea
+                value={fallback}
+                onChange={(e) => setFallback(e.target.value)}
+                placeholder="当字段缺失或判断无法继续时使用的默认回复..."
+                className="min-h-20 bg-slate-900 border-slate-600 text-white text-xs resize-y"
+              />
             </div>
           </div>
 
@@ -424,6 +441,7 @@ export default function Home() {
               placeholder={`{
   "platform_feats": ["channel_id"],
   "game_feats": [],
+  "fallback": "当前信息暂时不足，请转人工客服协助确认。",
   "decision_tree": {
     "key": "channel_id",
     "branches": {
