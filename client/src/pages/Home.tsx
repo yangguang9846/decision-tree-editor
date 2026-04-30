@@ -376,10 +376,14 @@ export default function Home() {
             <div className="p-4 border-b border-slate-700">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-cyan-400" style={{ fontFamily: 'Poppins, sans-serif' }}>Python Dict</h3>
-                <Button onClick={() => setShowCodePreview(false)} size="sm" variant="ghost" className="text-slate-400 hover:text-slate-200 h-6 w-6 p-0">✕</Button>
+                <div className="flex items-center gap-1">
+                  <Button onClick={handleCopyCode} size="sm" className="bg-cyan-500 hover:bg-cyan-600 text-xs h-7 px-2">
+                    <Copy size={12} className="mr-1" />复制
+                  </Button>
+                  <Button onClick={() => setShowCodePreview(false)} size="sm" variant="ghost" className="text-slate-400 hover:text-slate-200 h-7 w-7 p-0">✕</Button>
+                </div>
               </div>
               <pre className="bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-300 overflow-auto font-mono max-h-80 whitespace-pre-wrap">{dictCode}</pre>
-              <Button onClick={handleCopyCode} size="sm" className="mt-2 w-full bg-cyan-500 hover:bg-cyan-600 text-xs h-7"><Copy size={12} className="mr-1" />复制到剪贴板</Button>
             </div>
           )}
         </div>
