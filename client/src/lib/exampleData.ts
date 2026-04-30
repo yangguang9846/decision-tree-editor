@@ -14,9 +14,9 @@ export function createExampleTree(): TreeData {
   );
 
   // 101,100,105,106,107,110,113,194,195,501 -> nested
-  const nested1 = createBranchNode('has_name&profile_change_history');
+  const nested1 = createBranchNode('has_profile_change_history');
 
-  const nested1Y = createBranchNode('name&profile_audit_status');
+  const nested1Y = createBranchNode('profile_audit_status');
   nested1Y.branches!['verify'] = createLeafNode('我查看你最近一次修改头像昵称的时间是xx，目前资料在审核中，会存在一定的延迟，请耐心等待');
   nested1Y.branches!['fail'] = createLeafNode('我查看你最近一次修改头像昵称的时间是xx，但内容审核不通过，建议更换其他头像昵称重新提交');
   nested1Y.branches!['success'] = createLeafNode('我查看你最近一次修改头像昵称的时间是xx，已经审核通过了，你可以重新登录游戏查看是否刷新');
@@ -39,7 +39,7 @@ export function createExampleTree(): TreeData {
   );
 
   return {
-    platform_feats: ['channel_id', 'has_name&profile_change_history', 'name&profile_audit_status'],
+    platform_feats: ['channel_id', 'has_profile_change_history', 'profile_audit_status'],
     game_feats: ['has_rename_card'],
     fallback: '当前信息暂时不足，无法继续判断，请转人工客服协助确认。',
     decision_tree: root
