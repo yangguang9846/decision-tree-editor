@@ -117,8 +117,9 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
     setTreeBBox({ x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 });
   }, [tree, nodeOffsets, calculateLayout]);
 
-  // Initialize zoom/pan to fit the tree in the container
+  // Initialize zoom/pan to fit the tree in the container (first load only)
   useEffect(() => {
+    if (initializedRef.current) return;
     if (treeBBox.w === 0 || treeBBox.h === 0) return;
     const cw = containerSize.w;
     const ch = containerSize.h;
