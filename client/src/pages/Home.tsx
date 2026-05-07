@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, cloneNode, dictToTree, TreeData, insertParentAbove } from '@/lib/treeTypes';
+import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, cloneNode, dictToTree, TreeData, insertParentAbove, renameBranchCondition } from '@/lib/treeTypes';
 import { createExampleTree } from '@/lib/exampleData';
 import { TreeVisualizer } from '@/components/TreeVisualizer';
 import { NodeEditDialog } from '@/components/NodeEditDialog';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { Copy, Download, Plus, RefreshCw, Upload, X } from 'lucide-react';
+import { Copy, Download, Pencil, Plus, RefreshCw, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -26,6 +26,9 @@ export default function Home() {
   const [importCode, setImportCode] = useState('');
   const [newPlatformFeat, setNewPlatformFeat] = useState('');
   const [newGameFeat, setNewGameFeat] = useState('');
+  const [editingCondNodeId, setEditingCondNodeId] = useState<string | null>(null);
+  const [editingCondOld, setEditingCondOld] = useState('');
+  const [editingCondNew, setEditingCondNew] = useState('');
 
   const handleCreateNewTree = useCallback(() => {
     const newTree = createBranchNode('root_key');
@@ -115,6 +118,24 @@ export default function Home() {
       return newTree;
     });
   }, []);
+
+  const handleRenameCondition = useCallback(() => {
+    if (!editingCondNodeId || !editingCondOld.trim() || !editingCondNew.trim()) return;
+    if (editingCondOld === editingCondNew) {
+      setEditingCondNodeId(null);
+      return;
+    }
+    setTree(prev => {
+      const newTree = renameBranchCondition(prev, editingCondNodeId, editingCondOld, editingCondNew);
+      if (newTree) {
+        toast.success('条件已更新');
+      } else {
+        toast.error('条件名冲突或节点不存在');
+      }
+      return newTree || prev;
+    });
+    setEditingCondNodeId(null);
+  }, [editingCondNodeId, editingCondOld, editingCondNew]);
 
   const handleUpdateNode = useCallback((updates: Partial<TreeNode>) => {
     if (!selectedNodeId) return;
@@ -353,11 +374,31 @@ export default function Home() {
                     {selectedNode.branches && (
                       <div>
                         <label className="text-xs text-slate-400 block mb-1">分支 ({Object.keys(selectedNode.branches).length})</label>
-                        <div className="max-h-32 overflow-y-auto space-y-1">
+                        <div className="max-h-48 overflow-y-auto space-y-1">
                           {Object.entries(selectedNode.branches).map(([cond, child]) => (
-                            <div key={cond} className="flex items-center gap-1 text-xs bg-slate-900 rounded p-1.5">
-                              <span className="text-cyan-300 font-mono flex-1 truncate" title={cond}>{cond}</span>
-                              <span className="text-slate-500">→ {child.type === 'branch' ? '分支' : '叶子'}</span>
+                            <div key={cond} className="flex items-center gap-1 text-xs bg-slate-900 rounded p-1.5 group">
+                              {editingCondNodeId === selectedNode.id && editingCondOld === cond ? (
+                                <input
+                                  value={editingCondNew}
+                                  onChange={(e) => setEditingCondNew(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') handleRenameCondition(); else if (e.key === 'Escape') setEditingCondNodeId(null); }}
+                                  onBlur={() => setEditingCondNodeId(null)}
+                                  autoFocus
+                                  className="flex-1 bg-slate-700 border border-cyan-500 text-cyan-300 font-mono rounded px-1 py-0.5 outline-none text-xs"
+                                />
+                              ) : (
+                                <>
+                                  <span className="text-cyan-300 font-mono flex-1 truncate" title={cond}>{cond}</span>
+                                  <button
+                                    onClick={() => { setEditingCondNodeId(selectedNode.id); setEditingCondOld(cond); setEditingCondNew(cond); }}
+                                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-cyan-400 transition-opacity flex-shrink-0"
+                                    title="编辑条件"
+                                  >
+                                    <Pencil size={10} />
+                                  </button>
+                                </>
+                              )}
+                              <span className="text-slate-500 flex-shrink-0">→ {child.type === 'branch' ? '分支' : '叶子'}</span>
                             </div>
                           ))}
                         </div>

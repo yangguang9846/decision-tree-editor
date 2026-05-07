@@ -263,6 +263,20 @@ export function insertParentAbove(root: TreeNode | null, targetId: string, newKe
   return cloned;
 }
 
+/** Rename a condition key in a branch node's branches map */
+export function renameBranchCondition(root: TreeNode | null, parentId: string, oldCondition: string, newCondition: string): TreeNode | null {
+  if (!root || oldCondition === newCondition) return root;
+  const cloned = cloneNode(root);
+  const parent = findNode(cloned, parentId);
+  if (!parent || parent.type !== 'branch' || !parent.branches) return null;
+  if (!(oldCondition in parent.branches)) return null;
+  if (newCondition in parent.branches) return null; // would overwrite existing
+  const child = parent.branches[oldCondition];
+  delete parent.branches[oldCondition];
+  parent.branches[newCondition] = child;
+  return cloned;
+}
+
 // ====== Clone ======
 
 export function cloneNode(node: TreeNode): TreeNode {
