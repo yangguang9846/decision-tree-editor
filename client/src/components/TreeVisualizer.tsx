@@ -152,8 +152,8 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
       setPanY(e.clientY - panStart.y);
     }
     if (draggedNode && containerRef.current) {
-      const dx = e.clientX - dragStart.x;
-      const dy = e.clientY - dragStart.y;
+      const dx = (e.clientX - dragStart.x) / zoom;
+      const dy = (e.clientY - dragStart.y) / zoom;
       setNodeOffsets(prev => ({
         ...prev,
         [draggedNode]: { x: (prev[draggedNode]?.x || 0) + dx, y: (prev[draggedNode]?.y || 0) + dy },
