@@ -8,6 +8,7 @@ interface TreeVisualizerProps {
   onAddChild?: (parentId: string) => void;
   onDeleteNode?: (nodeId: string) => void;
   onInsertParentAbove?: (nodeId: string) => void;
+  onEditCondition?: (parentId: string, condition: string) => void;
 }
 
 interface NodePosition {
@@ -33,6 +34,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
   onAddChild,
   onDeleteNode,
   onInsertParentAbove,
+  onEditCondition,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [nodeLayout, setNodeLayout] = useState<NodeLayout>({});
@@ -225,8 +227,11 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
         const txt = cond.length > 22 ? cond.substring(0, 22) + '...' : cond;
         const bw = Math.max(40, txt.length * 6 + 16);
         lines.push(
-          <g key={`lb-${lid++}`}>
-            <rect x={mx - bw / 2} y={my - 10} width={bw} height={20} fill="#1e293b" stroke="#06B6D4" strokeWidth="0.5" rx="4" />
+          <g key={`lb-${lid++}`}
+            onClick={(e) => { e.stopPropagation(); onEditCondition?.(node.id, cond); }}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={mx - bw / 2} y={my - 10} width={bw} height={20} fill="#1e293b" stroke="#06B6D4" strokeWidth="1" rx="4" />
             <text x={mx} y={my + 4} textAnchor="middle" fontSize="10" fill="#06B6D4" fontWeight="500">{txt}</text>
           </g>
         );

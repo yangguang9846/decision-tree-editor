@@ -119,6 +119,13 @@ export default function Home() {
     });
   }, []);
 
+  const handleEditCondition = useCallback((parentId: string, condition: string) => {
+    setSelectedNodeId(parentId);
+    setEditingCondNodeId(parentId);
+    setEditingCondOld(condition);
+    setEditingCondNew(condition);
+  }, []);
+
   const handleRenameCondition = useCallback(() => {
     if (!editingCondNodeId || !editingCondOld.trim() || !editingCondNew.trim()) return;
     if (editingCondOld === editingCondNew) {
@@ -279,6 +286,7 @@ export default function Home() {
               onAddChild={(nodeId) => { setSelectedNodeId(nodeId); setAddNodeDialogOpen(true); }}
               onDeleteNode={handleDeleteNode}
               onInsertParentAbove={handleInsertParentAbove}
+              onEditCondition={handleEditCondition}
             />
           )}
         </div>
@@ -376,7 +384,7 @@ export default function Home() {
                         <label className="text-xs text-slate-400 block mb-1">分支 ({Object.keys(selectedNode.branches).length})</label>
                         <div className="max-h-48 overflow-y-auto space-y-1">
                           {Object.entries(selectedNode.branches).map(([cond, child]) => (
-                            <div key={cond} className="flex items-center gap-1 text-xs bg-slate-900 rounded p-1.5 group">
+                            <div key={cond} className="flex items-center gap-1 text-xs bg-slate-900 rounded p-1.5">
                               {editingCondNodeId === selectedNode.id && editingCondOld === cond ? (
                                 <input
                                   value={editingCondNew}
@@ -391,7 +399,7 @@ export default function Home() {
                                   <span className="text-cyan-300 font-mono flex-1 truncate" title={cond}>{cond}</span>
                                   <button
                                     onClick={() => { setEditingCondNodeId(selectedNode.id); setEditingCondOld(cond); setEditingCondNew(cond); }}
-                                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-cyan-400 transition-opacity flex-shrink-0"
+                                    className="text-slate-400 hover:text-cyan-400 flex-shrink-0"
                                     title="编辑条件"
                                   >
                                     <Pencil size={10} />
