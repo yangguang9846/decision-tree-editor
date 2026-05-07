@@ -228,6 +228,41 @@ function objToTree(obj: any): TreeNode | null {
   return node;
 }
 
+// ====== Insert Parent Above ======
+
+/** Find the parent node and the condition key linking to targetId */
+function findParentInTree(node: TreeNode, targetId: string): { parent: TreeNode; condition: string } | null {
+  if (node.type !== 'branch' || !node.branches) return null;
+  for (const [condition, child] of Object.entries(node.branches)) {
+    if (child.id === targetId) return { parent: node, condition };
+    const result = findParentInTree(child, targetId);
+    if (result) return result;
+  }
+  return null;
+}
+
+/** Insert a new branch node above targetId. If target is root, new node becomes root. */
+export function insertParentAbove(root: TreeNode | null, targetId: string, newKey: string = ''): TreeNode | null {
+  if (!root) return null;
+
+  if (root.id === targetId) {
+    const newRoot = createBranchNode(newKey);
+    newRoot.branches = { 'else': root };
+    return newRoot;
+  }
+
+  const cloned = cloneNode(root);
+  const info = findParentInTree(cloned, targetId);
+  if (!info) return null;
+
+  const targetNode = info.parent.branches![info.condition];
+  const newParent = createBranchNode(newKey);
+  newParent.branches = { 'else': targetNode };
+  info.parent.branches![info.condition] = newParent;
+
+  return cloned;
+}
+
 // ====== Clone ======
 
 export function cloneNode(node: TreeNode): TreeNode {

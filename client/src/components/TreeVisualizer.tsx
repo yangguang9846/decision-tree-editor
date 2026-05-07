@@ -7,6 +7,7 @@ interface TreeVisualizerProps {
   onSelectNode: (nodeId: string) => void;
   onAddChild?: (parentId: string) => void;
   onDeleteNode?: (nodeId: string) => void;
+  onInsertParentAbove?: (nodeId: string) => void;
 }
 
 interface NodePosition {
@@ -31,6 +32,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
   onSelectNode,
   onAddChild,
   onDeleteNode,
+  onInsertParentAbove,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [nodeLayout, setNodeLayout] = useState<NodeLayout>({});
@@ -291,9 +293,12 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
       </svg>
 
       {contextMenu && (
-        <div className="fixed bg-slate-800 border border-slate-600 rounded-md shadow-xl z-50 py-1 min-w-[140px]" style={{ top: contextMenu.y, left: contextMenu.x }} onMouseLeave={() => setContextMenu(null)}>
+        <div className="fixed bg-slate-800 border border-slate-600 rounded-md shadow-xl z-50 py-1 min-w-[160px]" style={{ top: contextMenu.y, left: contextMenu.x }} onMouseLeave={() => setContextMenu(null)}>
           <button className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 hover:text-cyan-400" onClick={() => { onAddChild?.(contextMenu.nodeId); setContextMenu(null); }}>
             + 添加子分支
+          </button>
+          <button className="block w-full text-left px-3 py-1.5 text-xs text-yellow-400 hover:bg-slate-700" onClick={() => { onInsertParentAbove?.(contextMenu.nodeId); setContextMenu(null); }}>
+            在上方插入判断节点
           </button>
           <button className="block w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-slate-700" onClick={() => { onDeleteNode?.(contextMenu.nodeId); setContextMenu(null); }}>
             删除节点

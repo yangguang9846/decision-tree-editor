@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, cloneNode, dictToTree, TreeData } from '@/lib/treeTypes';
+import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, cloneNode, dictToTree, TreeData, insertParentAbove } from '@/lib/treeTypes';
 import { createExampleTree } from '@/lib/exampleData';
 import { TreeVisualizer } from '@/components/TreeVisualizer';
 import { NodeEditDialog } from '@/components/NodeEditDialog';
@@ -104,6 +104,17 @@ export default function Home() {
       return newTree;
     });
   }, [tree]);
+
+  const handleInsertParentAbove = useCallback((nodeId: string) => {
+    setTree(prev => {
+      const newTree = insertParentAbove(prev, nodeId, '');
+      if (newTree) {
+        setSelectedNodeId(newTree.id);
+        toast.success('已在上方插入判断节点');
+      }
+      return newTree;
+    });
+  }, []);
 
   const handleUpdateNode = useCallback((updates: Partial<TreeNode>) => {
     if (!selectedNodeId) return;
@@ -246,6 +257,7 @@ export default function Home() {
               onSelectNode={handleSelectNode}
               onAddChild={(nodeId) => { setSelectedNodeId(nodeId); setAddNodeDialogOpen(true); }}
               onDeleteNode={handleDeleteNode}
+              onInsertParentAbove={handleInsertParentAbove}
             />
           )}
         </div>
