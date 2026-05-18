@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, spliceNode, cloneNode, dictToTree, TreeData, insertParentAbove, renameBranchCondition } from '@/lib/treeTypes';
 import { createExampleTree } from '@/lib/exampleData';
 import { TreeVisualizer } from '@/components/TreeVisualizer';
@@ -10,8 +10,39 @@ import { Card } from '@/components/ui/card';
 import { Copy, Download, Pencil, Plus, RefreshCw, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+function useUndoableState<T>(initial: T) {
+  const historyRef = useRef<T[]>([initial]);
+  const indexRef = useRef(0);
+  const [state, setStateRaw] = useState(initial);
+
+  const push = useCallback((value: T | ((prev: T) => T)) => {
+    const resolved = typeof value === 'function' ? (value as (prev: T) => T)(historyRef.current[indexRef.current]) : value;
+    historyRef.current = historyRef.current.slice(0, indexRef.current + 1);
+    historyRef.current.push(resolved);
+    if (historyRef.current.length > 100) historyRef.current.shift();
+    indexRef.current = historyRef.current.length - 1;
+    setStateRaw(resolved);
+  }, []);
+
+  const undo = useCallback(() => {
+    if (indexRef.current > 0) {
+      indexRef.current--;
+      setStateRaw(historyRef.current[indexRef.current]);
+    }
+  }, []);
+
+  const redo = useCallback(() => {
+    if (indexRef.current < historyRef.current.length - 1) {
+      indexRef.current++;
+      setStateRaw(historyRef.current[indexRef.current]);
+    }
+  }, []);
+
+  return { state, set: push, undo, redo, canUndo: indexRef.current > 0, canRedo: indexRef.current < historyRef.current.length - 1 };
+}
+
 export default function Home() {
-  const [tree, setTree] = useState<TreeNode | null>(null);
+  const { state: tree, set: setTree, undo, redo } = useUndoableState<TreeNode | null>(null);
   const [platformFeats, setPlatformFeats] = useState<string[]>([]);
   const [gameFeats, setGameFeats] = useState<string[]>([]);
   const [fallback, setFallback] = useState('');
@@ -29,6 +60,18 @@ export default function Home() {
   const [editingCondNodeId, setEditingCondNodeId] = useState<string | null>(null);
   const [editingCondOld, setEditingCondOld] = useState('');
   const [editingCondNew, setEditingCondNew] = useState('');
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
 
   const handleCreateNewTree = useCallback(() => {
     const newTree = createBranchNode('root_key');
