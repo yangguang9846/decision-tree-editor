@@ -70,6 +70,30 @@ export function deleteNode(root: TreeNode | null, targetId: string): TreeNode | 
   return root;
 }
 
+export function spliceNode(root: TreeNode | null, targetId: string): TreeNode | null {
+  if (!root) return null;
+  if (root.id === targetId) return root;
+  if (root.branches) {
+    for (const [condition, branch] of Object.entries(root.branches)) {
+      if (branch.id === targetId) {
+        const newBranches: Record<string, TreeNode> = {};
+        for (const [k, v] of Object.entries(root.branches)) {
+          if (k !== condition) newBranches[k] = v;
+        }
+        if (branch.branches) {
+          for (const [childCond, childNode] of Object.entries(branch.branches)) {
+            newBranches[childCond] = childNode;
+          }
+        }
+        root.branches = newBranches;
+        return root;
+      }
+      spliceNode(branch, targetId);
+    }
+  }
+  return root;
+}
+
 // ====== Python Dict Export ======
 
 export function treeToDict(treeData: TreeData): string {

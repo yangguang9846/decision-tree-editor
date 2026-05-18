@@ -7,6 +7,7 @@ interface TreeVisualizerProps {
   onSelectNode: (nodeId: string) => void;
   onAddChild?: (parentId: string) => void;
   onDeleteNode?: (nodeId: string) => void;
+  onDeleteNodeOnly?: (nodeId: string) => void;
   onInsertParentAbove?: (nodeId: string) => void;
   onEditCondition?: (parentId: string, condition: string) => void;
 }
@@ -33,6 +34,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
   onSelectNode,
   onAddChild,
   onDeleteNode,
+  onDeleteNodeOnly,
   onInsertParentAbove,
   onEditCondition,
 }) => {
@@ -306,8 +308,11 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
           <button className="block w-full text-left px-3 py-1.5 text-xs text-yellow-400 hover:bg-slate-700" onClick={() => { onInsertParentAbove?.(contextMenu.nodeId); setContextMenu(null); }}>
             在上方插入判断节点
           </button>
+          <button className="block w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-slate-700" onClick={() => { onDeleteNodeOnly?.(contextMenu.nodeId); setContextMenu(null); }}>
+            删除节点（保留子树）
+          </button>
           <button className="block w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-slate-700" onClick={() => { onDeleteNode?.(contextMenu.nodeId); setContextMenu(null); }}>
-            删除节点
+            删除节点及子树
           </button>
         </div>
       )}

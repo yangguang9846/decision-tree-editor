@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, cloneNode, dictToTree, TreeData, insertParentAbove, renameBranchCondition } from '@/lib/treeTypes';
+import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, spliceNode, cloneNode, dictToTree, TreeData, insertParentAbove, renameBranchCondition } from '@/lib/treeTypes';
 import { createExampleTree } from '@/lib/exampleData';
 import { TreeVisualizer } from '@/components/TreeVisualizer';
 import { NodeEditDialog } from '@/components/NodeEditDialog';
@@ -103,6 +103,21 @@ export default function Home() {
       if (newTree) {
         setSelectedNodeId(null);
         toast.success('已删除节点');
+      }
+      return newTree;
+    });
+  }, [tree]);
+
+  const handleDeleteNodeOnly = useCallback((nodeId: string) => {
+    if (tree?.id === nodeId) {
+      toast.error('不能删除根节点');
+      return;
+    }
+    setTree(prev => {
+      const newTree = spliceNode(prev, nodeId);
+      if (newTree) {
+        setSelectedNodeId(null);
+        toast.success('已删除节点，子树已保留');
       }
       return newTree;
     });
@@ -285,6 +300,7 @@ export default function Home() {
               onSelectNode={handleSelectNode}
               onAddChild={(nodeId) => { setSelectedNodeId(nodeId); setAddNodeDialogOpen(true); }}
               onDeleteNode={handleDeleteNode}
+              onDeleteNodeOnly={handleDeleteNodeOnly}
               onInsertParentAbove={handleInsertParentAbove}
               onEditCondition={handleEditCondition}
             />
