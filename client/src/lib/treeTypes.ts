@@ -284,6 +284,44 @@ export function renameBranchCondition(root: TreeNode | null, parentId: string, o
   return cloned;
 }
 
+// ====== Add Child / Update Node ======
+
+/**
+ * 在 parentId 下新增一个子节点。条件不能已存在。
+ * 返回新树(不可变);parentId 不存在、不是分支、或条件已存在时返回 null。
+ */
+export function addChildNode(
+  root: TreeNode | null,
+  parentId: string,
+  condition: string,
+  child: TreeNode
+): TreeNode | null {
+  if (!root || !condition) return null;
+  const cloned = cloneNode(root);
+  const parent = findNode(cloned, parentId);
+  if (!parent || parent.type !== 'branch') return null;
+  if (!parent.branches) parent.branches = {};
+  if (parent.branches[condition]) return null; // 条件已存在
+  parent.branches[condition] = child;
+  return cloned;
+}
+
+/**
+ * 更新节点字段(merge)。返回新树;节点不存在时返回 null。
+ */
+export function updateNode(
+  root: TreeNode | null,
+  targetId: string,
+  updates: Partial<TreeNode>
+): TreeNode | null {
+  if (!root) return null;
+  const cloned = cloneNode(root);
+  const node = findNode(cloned, targetId);
+  if (!node) return null;
+  Object.assign(node, updates);
+  return cloned;
+}
+
 // ====== Clone ======
 
 export function cloneNode(node: TreeNode): TreeNode {

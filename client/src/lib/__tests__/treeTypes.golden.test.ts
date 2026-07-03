@@ -19,6 +19,8 @@ import {
   insertParentAbove,
   renameBranchCondition,
   cloneNode,
+  addChildNode,
+  updateNode,
 } from '../treeTypes';
 
 // 把树导出再导入，做一次往返，看是否稳定。
@@ -173,6 +175,53 @@ describe('golden: 树操作', () => {
 
   it('treeToDict 对空树返回 {}', () => {
     expect(treeToDict({ platform_feats: [], game_feats: [], decision_tree: null })).toBe('{}');
+  });
+});
+
+describe('golden: addChildNode / updateNode', () => {
+  function buildTestTree() {
+    const root = createBranchNode('root');
+    root.branches!['Y'] = createLeafNode('yes');
+    return root;
+  }
+
+  it('addChildNode 在分支下加叶子子节点', () => {
+    const root = buildTestTree();
+    const after = addChildNode(cloneNode(root), root.id, 'N', createLeafNode('no'))!;
+    expect(after.branches!['N'].final).toBe('no');
+    expect(Object.keys(after.branches!).sort()).toEqual(['N', 'Y']);
+    expect(Object.keys(root.branches!)).toEqual(['Y']);
+  });
+
+  it('addChildNode 条件已存在返回 null', () => {
+    const root = buildTestTree();
+    const after = addChildNode(cloneNode(root), root.id, 'Y', createLeafNode('dup'));
+    expect(after).toBeNull();
+  });
+
+  it('addChildNode 对叶子节点返回 null', () => {
+    const root = buildTestTree();
+    const yId = root.branches!['Y'].id;
+    const after = addChildNode(cloneNode(root), yId, 'x', createLeafNode('x'));
+    expect(after).toBeNull();
+  });
+
+  it('addChildNode 空条件返回 null', () => {
+    const root = buildTestTree();
+    expect(addChildNode(cloneNode(root), root.id, '', createLeafNode('x'))).toBeNull();
+  });
+
+  it('updateNode 更新 key/final', () => {
+    const root = buildTestTree();
+    const yId = root.branches!['Y'].id;
+    const after = updateNode(cloneNode(root), yId, { final: 'changed' })!;
+    expect(after.branches!['Y'].final).toBe('changed');
+    expect(root.branches!['Y'].final).toBe('yes');
+  });
+
+  it('updateNode 节点不存在返回 null', () => {
+    const root = buildTestTree();
+    expect(updateNode(cloneNode(root), 'nonexistent', { final: 'x' })).toBeNull();
   });
 });
 
