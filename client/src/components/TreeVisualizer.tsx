@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { TreeNode } from '@/lib/treeTypes';
+import {
+  calculateLayout,
+  type NodeLayout,
+  type Offsets,
+  NODE_WIDTH,
+  NODE_HEIGHT,
+} from '@/lib/layout';
 
 interface TreeVisualizerProps {
   tree: TreeNode;
@@ -11,22 +18,6 @@ interface TreeVisualizerProps {
   onInsertParentAbove?: (nodeId: string) => void;
   onEditCondition?: (parentId: string, condition: string) => void;
 }
-
-interface NodePosition {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface NodeLayout {
-  [key: string]: NodePosition;
-}
-
-const NODE_WIDTH = 140;
-const NODE_HEIGHT = 54;
-const VERTICAL_SPACING = 140;
-const MIN_HORIZONTAL_SPACING = 140;
 
 export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
   tree,
@@ -67,42 +58,6 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  const calculateTreeWidth = (node: TreeNode): number => {
-    if (node.type === 'leaf') return NODE_WIDTH;
-    if (!node.branches || Object.keys(node.branches).length === 0) return NODE_WIDTH;
-    const childWidths = Object.values(node.branches).map(child => calculateTreeWidth(child));
-    return Math.max(NODE_WIDTH, childWidths.reduce((a, b) => a + b, 0) + (childWidths.length - 1) * MIN_HORIZONTAL_SPACING);
-  };
-
-  const calculateLayout = useCallback((
-    node: TreeNode,
-    x: number,
-    y: number,
-    layout: NodeLayout = {},
-    offsets: { [key: string]: { x: number; y: number } } = {}
-  ): { layout: NodeLayout } => {
-    const offset = offsets[node.id] || { x: 0, y: 0 };
-    const ax = x + offset.x;
-    const ay = y + offset.y;
-    layout[node.id] = { x: ax, y: ay, width: NODE_WIDTH, height: NODE_HEIGHT };
-    if (node.type === 'branch' && node.branches) {
-      const branches = Object.entries(node.branches);
-      if (branches.length > 0) {
-        const childWidths = branches.map(([_, child]) => calculateTreeWidth(child));
-        const totalWidth = childWidths.reduce((a, b) => a + b, 0) + (branches.length - 1) * MIN_HORIZONTAL_SPACING;
-        const startX = ax + NODE_WIDTH / 2 - totalWidth / 2;
-        let currentX = startX;
-        branches.forEach(([cond], index) => {
-          const child = node.branches![cond];
-          const cw = childWidths[index];
-          calculateLayout(child, currentX + cw / 2 - NODE_WIDTH / 2, ay + VERTICAL_SPACING, layout, offsets);
-          currentX += cw + MIN_HORIZONTAL_SPACING;
-        });
-      }
-    }
-    return { layout };
-  }, []);
-
   // Compute layout and bounding box
   useEffect(() => {
     const result = calculateLayout(tree, 0, 0, {}, nodeOffsets);
@@ -117,7 +72,7 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
     });
     const pad = 60;
     setTreeBBox({ x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 });
-  }, [tree, nodeOffsets, calculateLayout]);
+  }, [tree, nodeOffsets]);
 
   // Initialize zoom/pan to fit the tree in the container (first load only)
   useEffect(() => {

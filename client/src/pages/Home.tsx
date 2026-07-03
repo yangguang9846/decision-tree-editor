@@ -1,145 +1,68 @@
-import React, { useState, useCallback } from 'react';
-import { TreeNode, createBranchNode, createLeafNode, treeToDict, findNode, deleteNode, spliceNode, cloneNode, dictToTree, TreeData, insertParentAbove, renameBranchCondition } from '@/lib/treeTypes';
-import { createExampleTree } from '@/lib/exampleData';
+import { useState, useCallback } from 'react';
 import { TreeVisualizer } from '@/components/TreeVisualizer';
 import { NodeEditDialog } from '@/components/NodeEditDialog';
+import { AddChildDialog } from '@/components/AddChildDialog';
+import { ImportDialog } from '@/components/ImportDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
 import { Copy, Download, Pencil, Plus, RefreshCw, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTreeState } from '@/hooks/useTreeState';
 
 export default function Home() {
-  const [tree, setTree] = useState<TreeNode | null>(null);
-  const [platformFeats, setPlatformFeats] = useState<string[]>([]);
-  const [gameFeats, setGameFeats] = useState<string[]>([]);
-  const [fallback, setFallback] = useState('');
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const {
+    tree,
+    platformFeats,
+    gameFeats,
+    fallback,
+    selectedNodeId,
+    selectedNode,
+    dictCode,
+    setPlatformFeats,
+    setGameFeats,
+    setFallback,
+    actions,
+  } = useTreeState();
+
   const [showCodePreview, setShowCodePreview] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addNodeDialogOpen, setAddNodeDialogOpen] = useState(false);
-  const [nodeTypeToAdd, setNodeTypeToAdd] = useState<'branch' | 'leaf' | null>(null);
-  const [newCondition, setNewCondition] = useState('');
-  const [newNodeKey, setNewNodeKey] = useState('');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importCode, setImportCode] = useState('');
   const [newPlatformFeat, setNewPlatformFeat] = useState('');
   const [newGameFeat, setNewGameFeat] = useState('');
   const [editingCondNodeId, setEditingCondNodeId] = useState<string | null>(null);
   const [editingCondOld, setEditingCondOld] = useState('');
   const [editingCondNew, setEditingCondNew] = useState('');
+  // 添加子节点对话框需要知道目标父节点:打开时锁定
+  const [addChildTargetId, setAddChildTargetId] = useState<string | null>(null);
 
-  const handleCreateNewTree = useCallback(() => {
-    const newTree = createBranchNode('root_key');
-    setTree(newTree);
-    setPlatformFeats([]);
-    setGameFeats([]);
-    setFallback('');
-    setSelectedNodeId(newTree.id);
-    setShowCodePreview(false);
-    toast.success('已创建新的决策树');
-  }, []);
-
-  const handleLoadExample = useCallback(() => {
-    const exampleData = createExampleTree();
-    setTree(exampleData.decision_tree);
-    setPlatformFeats(exampleData.platform_feats);
-    setGameFeats(exampleData.game_feats);
-    setFallback(exampleData.fallback || '');
-    setSelectedNodeId(exampleData.decision_tree?.id || null);
-    setShowCodePreview(false);
-    toast.success('已加载示例决策树');
-  }, []);
-
-  const handleSelectNode = useCallback((nodeId: string) => {
-    setSelectedNodeId(nodeId);
-  }, []);
-
-  const handleAddNode = useCallback(() => {
-    if (!selectedNodeId || !newCondition.trim()) {
-      toast.error('请输入条件');
-      return;
+  // 添加子节点:工具栏按钮针对当前选中节点
+  const openAddChildForSelected = useCallback(() => {
+    if (selectedNode?.type === 'branch') {
+      setAddChildTargetId(selectedNode.id);
+      setAddNodeDialogOpen(true);
     }
-    if (nodeTypeToAdd === 'branch' && !newNodeKey.trim()) {
-      toast.error('请输入分支节点的判断键');
-      return;
-    }
+  }, [selectedNode]);
 
-    setTree(prev => {
-      if (!prev) return prev;
-      const newTree = cloneNode(prev);
-      const parent = findNode(newTree, selectedNodeId);
-      if (parent && parent.type === 'branch') {
-        if (!parent.branches) parent.branches = {};
-        if (parent.branches[newCondition]) {
-          toast.error('该条件已存在');
-          return newTree;
-        }
-        const newChild = nodeTypeToAdd === 'branch'
-          ? createBranchNode(newNodeKey)
-          : createLeafNode('');
-        parent.branches[newCondition] = newChild;
-        toast.success(`已添加${nodeTypeToAdd === 'branch' ? '分支' : '叶子'}节点`);
-      } else {
-        toast.error('只能在分支节点上添加子节点');
-      }
-      return newTree;
-    });
+  // 画布右键"添加子分支"针对特定节点
+  const openAddChildForNode = useCallback((nodeId: string) => {
+    actions.selectNode(nodeId);
+    setAddChildTargetId(nodeId);
+    setAddNodeDialogOpen(true);
+  }, [actions]);
 
-    setNewCondition('');
-    setNewNodeKey('');
-    setNodeTypeToAdd(null);
-    setAddNodeDialogOpen(false);
-  }, [selectedNodeId, newCondition, newNodeKey, nodeTypeToAdd]);
-
-  const handleDeleteNode = useCallback((nodeId: string) => {
-    if (tree?.id === nodeId) {
-      toast.error('不能删除根节点');
-      return;
-    }
-    setTree(prev => {
-      const newTree = deleteNode(prev, nodeId);
-      if (newTree) {
-        setSelectedNodeId(null);
-        toast.success('已删除节点');
-      }
-      return newTree;
-    });
-  }, [tree]);
-
-  const handleDeleteNodeOnly = useCallback((nodeId: string) => {
-    if (tree?.id === nodeId) {
-      toast.error('不能删除根节点');
-      return;
-    }
-    setTree(prev => {
-      const newTree = spliceNode(prev, nodeId);
-      if (newTree) {
-        setSelectedNodeId(null);
-        toast.success('已删除节点，子树已保留');
-      }
-      return newTree;
-    });
-  }, [tree]);
-
-  const handleInsertParentAbove = useCallback((nodeId: string) => {
-    setTree(prev => {
-      const newTree = insertParentAbove(prev, nodeId, '');
-      if (newTree) {
-        setSelectedNodeId(newTree.id);
-        toast.success('已在上方插入判断节点');
-      }
-      return newTree;
-    });
-  }, []);
+  const handleAddChild = useCallback((condition: string, type: 'branch' | 'leaf', branchKey: string) => {
+    if (!addChildTargetId) return false;
+    return actions.addChild(addChildTargetId, condition, type, branchKey);
+  }, [addChildTargetId, actions]);
 
   const handleEditCondition = useCallback((parentId: string, condition: string) => {
-    setSelectedNodeId(parentId);
+    actions.selectNode(parentId);
     setEditingCondNodeId(parentId);
     setEditingCondOld(condition);
     setEditingCondNew(condition);
-  }, []);
+  }, [actions]);
 
   const handleRenameCondition = useCallback(() => {
     if (!editingCondNodeId || !editingCondOld.trim() || !editingCondNew.trim()) return;
@@ -147,70 +70,15 @@ export default function Home() {
       setEditingCondNodeId(null);
       return;
     }
-    setTree(prev => {
-      const newTree = renameBranchCondition(prev, editingCondNodeId, editingCondOld, editingCondNew);
-      if (newTree) {
-        toast.success('条件已更新');
-      } else {
-        toast.error('条件名冲突或节点不存在');
-      }
-      return newTree || prev;
-    });
+    actions.renameCondition(editingCondNodeId, editingCondOld, editingCondNew);
     setEditingCondNodeId(null);
-  }, [editingCondNodeId, editingCondOld, editingCondNew]);
-
-  const handleUpdateNode = useCallback((updates: Partial<TreeNode>) => {
-    if (!selectedNodeId) return;
-    setTree(prev => {
-      if (!prev) return prev;
-      const newTree = cloneNode(prev);
-      const node = findNode(newTree, selectedNodeId);
-      if (node) {
-        Object.assign(node, updates);
-        toast.success('节点已更新');
-      }
-      return newTree;
-    });
-  }, [selectedNodeId]);
-
-  const treeData: TreeData = {
-    platform_feats: platformFeats,
-    game_feats: gameFeats,
-    fallback,
-    decision_tree: tree
-  };
-  const dictCode = tree ? treeToDict(treeData) : '';
+  }, [editingCondNodeId, editingCondOld, editingCondNew, actions]);
 
   const handleCopyCode = useCallback(() => {
     if (!tree) return;
     navigator.clipboard.writeText(dictCode);
     toast.success('已复制到剪贴板');
   }, [dictCode, tree]);
-
-  const handleImportTree = useCallback(() => {
-    if (!importCode.trim()) {
-      toast.error('请粘贴代码');
-      return;
-    }
-    try {
-      const importedData = dictToTree(importCode);
-      if (importedData && importedData.decision_tree) {
-        setTree(importedData.decision_tree);
-        setPlatformFeats(importedData.platform_feats);
-        setGameFeats(importedData.game_feats);
-        setFallback(importedData.fallback || '');
-        setSelectedNodeId(importedData.decision_tree.id || null);
-        setImportDialogOpen(false);
-        setImportCode('');
-        setShowCodePreview(false);
-        toast.success('决策树导入成功');
-      } else {
-        toast.error('无法解析决策树');
-      }
-    } catch (error) {
-      toast.error('导入失败：' + (error instanceof Error ? error.message : '未知错误'));
-    }
-  }, [importCode]);
 
   const handleDownloadCode = useCallback(() => {
     if (!tree) return;
@@ -223,6 +91,15 @@ export default function Home() {
     document.body.removeChild(element);
     toast.success('已下载 decision_tree.py');
   }, [dictCode, tree]);
+
+  const handleImport = useCallback((code: string) => {
+    const ok = actions.importFromCode(code);
+    if (ok) {
+      setImportDialogOpen(false);
+      setShowCodePreview(false);
+    }
+    return ok;
+  }, [actions]);
 
   const addPlatformFeat = () => {
     const v = newPlatformFeat.trim();
@@ -245,8 +122,6 @@ export default function Home() {
     setGameFeats(gameFeats.filter((_, i) => i !== idx));
   };
 
-  const selectedNode = tree && selectedNodeId ? findNode(tree, selectedNodeId) : null;
-
   return (
     <div className="min-h-screen bg-slate-900 text-foreground flex flex-col">
       {/* 顶部工具栏 */}
@@ -260,16 +135,16 @@ export default function Home() {
         <div className="flex gap-2 items-center flex-wrap">
           {!tree ? (
             <>
-              <Button onClick={handleCreateNewTree} className="bg-cyan-500 hover:bg-cyan-600 text-white"><Plus size={14} className="mr-1" />创建新树</Button>
-              <Button onClick={handleLoadExample} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">加载示例</Button>
+              <Button onClick={actions.createNewTree} className="bg-cyan-500 hover:bg-cyan-600 text-white"><Plus size={14} className="mr-1" />创建新树</Button>
+              <Button onClick={actions.loadExample} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">加载示例</Button>
               <Button onClick={() => setImportDialogOpen(true)} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700"><Upload size={14} className="mr-1" />导入</Button>
             </>
           ) : (
             <>
-              <Button onClick={handleLoadExample} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs">重新加载示例</Button>
+              <Button onClick={actions.loadExample} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs">重新加载示例</Button>
               <Button onClick={() => setImportDialogOpen(true)} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs"><Upload size={14} className="mr-1" />导入</Button>
-              <Button onClick={handleCreateNewTree} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs"><RefreshCw size={14} className="mr-1" />新建</Button>
-              <Button onClick={() => setAddNodeDialogOpen(true)} disabled={!selectedNode || selectedNode.type !== 'branch'} className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-xs"><Plus size={14} className="mr-1" />添加子节点</Button>
+              <Button onClick={actions.createNewTree} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs"><RefreshCw size={14} className="mr-1" />新建</Button>
+              <Button onClick={openAddChildForSelected} disabled={!selectedNode || selectedNode.type !== 'branch'} className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 text-xs"><Plus size={14} className="mr-1" />添加子节点</Button>
               <Button onClick={() => setEditDialogOpen(true)} disabled={!selectedNode} className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 text-xs">编辑节点</Button>
               <Button onClick={() => setShowCodePreview(!showCodePreview)} className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs"><Copy size={14} className="mr-1" />{showCodePreview ? '隐藏代码' : '查看代码'}</Button>
               <Button onClick={handleDownloadCode} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs"><Download size={14} className="mr-1" />下载</Button>
@@ -288,8 +163,8 @@ export default function Home() {
                 <div className="text-6xl mb-4">🌳</div>
                 <p className="text-slate-400 mb-6">还没有创建决策树</p>
                 <div className="flex gap-2 justify-center">
-                  <Button onClick={handleCreateNewTree} className="bg-cyan-500 hover:bg-cyan-600 text-white"><Plus size={16} className="mr-2" />创建新树</Button>
-                  <Button onClick={handleLoadExample} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">加载示例</Button>
+                  <Button onClick={actions.createNewTree} className="bg-cyan-500 hover:bg-cyan-600 text-white"><Plus size={16} className="mr-2" />创建新树</Button>
+                  <Button onClick={actions.loadExample} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">加载示例</Button>
                 </div>
               </div>
             </div>
@@ -297,11 +172,11 @@ export default function Home() {
             <TreeVisualizer
               tree={tree}
               selectedNodeId={selectedNodeId}
-              onSelectNode={handleSelectNode}
-              onAddChild={(nodeId) => { setSelectedNodeId(nodeId); setAddNodeDialogOpen(true); }}
-              onDeleteNode={handleDeleteNode}
-              onDeleteNodeOnly={handleDeleteNodeOnly}
-              onInsertParentAbove={handleInsertParentAbove}
+              onSelectNode={actions.selectNode}
+              onAddChild={openAddChildForNode}
+              onDeleteNode={actions.deleteNodeAndSubtree}
+              onDeleteNodeOnly={actions.deleteNodeOnly}
+              onInsertParentAbove={actions.insertParentAbove}
               onEditCondition={handleEditCondition}
             />
           )}
@@ -439,7 +314,7 @@ export default function Home() {
                 <div className="flex gap-2 pt-1">
                   <Button onClick={() => setEditDialogOpen(true)} size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs h-7">编辑</Button>
                   {tree && selectedNode.id !== tree.id && (
-                    <Button onClick={() => handleDeleteNode(selectedNode.id)} size="sm" variant="destructive" className="flex-1 text-xs h-7">删除</Button>
+                    <Button onClick={() => actions.deleteNodeAndSubtree(selectedNode.id)} size="sm" variant="destructive" className="flex-1 text-xs h-7">删除</Button>
                   )}
                 </div>
               </div>
@@ -471,75 +346,22 @@ export default function Home() {
         open={editDialogOpen}
         node={selectedNode}
         onClose={() => setEditDialogOpen(false)}
-        onSave={handleUpdateNode}
+        onSave={actions.updateNodeFields}
       />
 
       {/* 添加子节点对话框 */}
-      {addNodeDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="bg-slate-800 border-slate-700 p-6 w-96">
-            <h2 className="text-lg font-bold text-white mb-4">添加子节点</h2>
-            <div className="mb-4">
-              <label className="text-sm text-slate-300 block mb-2">节点类型</label>
-              <div className="flex gap-2">
-                <Button onClick={() => setNodeTypeToAdd('branch')} className={`flex-1 ${nodeTypeToAdd === 'branch' ? 'bg-cyan-500 hover:bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'}`}>分支节点</Button>
-                <Button onClick={() => setNodeTypeToAdd('leaf')} className={`flex-1 ${nodeTypeToAdd === 'leaf' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-slate-700 hover:bg-slate-600'}`}>叶子节点</Button>
-              </div>
-            </div>
-            <Input
-              value={newCondition}
-              onChange={(e) => setNewCondition(e.target.value)}
-              placeholder="输入条件（如：Y, N, 818, else）"
-              className="bg-slate-700 border-slate-600 text-white mb-4"
-              onKeyDown={(e) => { if (e.key === 'Enter' && nodeTypeToAdd) handleAddNode(); }}
-            />
-            {nodeTypeToAdd === 'branch' && (
-              <Input
-                value={newNodeKey}
-                onChange={(e) => setNewNodeKey(e.target.value)}
-                placeholder="输入判断键（如：channel_id）"
-                className="bg-slate-700 border-slate-600 text-white mb-4"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddNode(); }}
-              />
-            )}
-            <div className="flex gap-2">
-              <Button onClick={() => { setAddNodeDialogOpen(false); setNewCondition(''); setNewNodeKey(''); setNodeTypeToAdd(null); }} variant="outline" className="flex-1 border-slate-600 text-slate-300">取消</Button>
-              <Button onClick={handleAddNode} disabled={!nodeTypeToAdd} className="flex-1 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50">添加</Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <AddChildDialog
+        open={addNodeDialogOpen}
+        onAdd={handleAddChild}
+        onClose={() => { setAddNodeDialogOpen(false); setAddChildTargetId(null); }}
+      />
 
       {/* 导入对话框 */}
-      {importDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="bg-slate-800 border-slate-700 p-6 w-[500px] max-h-[80vh] flex flex-col">
-            <h2 className="text-lg font-bold text-white mb-2">导入决策树</h2>
-            <p className="text-xs text-slate-400 mb-3">粘贴 JSON 或 Python Dict 格式，支持模板 CSV 格式和元组键</p>
-            <textarea
-              value={importCode}
-              onChange={(e) => setImportCode(e.target.value)}
-              placeholder={`{
-  "platform_feats": ["channel_id"],
-  "game_feats": [],
-  "fallback": "当前信息暂时不足，请转人工客服协助确认。",
-  "decision_tree": {
-    "key": "channel_id",
-    "branches": {
-      "818": { "final": "答案" },
-      "else": { "final": "默认答案" }
-    }
-  }
-}`}
-              className="bg-slate-700 border border-slate-600 text-white rounded p-3 mb-4 flex-1 font-mono text-sm resize-none min-h-[200px]"
-            />
-            <div className="flex gap-2">
-              <Button onClick={() => { setImportDialogOpen(false); setImportCode(''); }} variant="outline" className="flex-1 border-slate-600 text-slate-300">取消</Button>
-              <Button onClick={handleImportTree} className="flex-1 bg-cyan-500 hover:bg-cyan-600">导入</Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      <ImportDialog
+        open={importDialogOpen}
+        onImport={handleImport}
+        onClose={() => setImportDialogOpen(false)}
+      />
     </div>
   );
 }
