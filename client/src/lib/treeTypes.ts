@@ -15,7 +15,7 @@ export interface TreeData {
   decision_tree: TreeNode | null;
 }
 
-export function generateNodeId(): string {
+function generateNodeId(): string {
   return `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
@@ -33,23 +33,6 @@ export function findNode(node: TreeNode | null, targetId: string): TreeNode | nu
   if (node.branches) {
     for (const branch of Object.values(node.branches)) {
       const found = findNode(branch, targetId);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-export function findNodePath(
-  node: TreeNode | null,
-  targetId: string,
-  path: Array<{ node: TreeNode; condition?: string }> = []
-): Array<{ node: TreeNode; condition?: string }> | null {
-  if (!node) return null;
-  path.push({ node });
-  if (node.id === targetId) return path;
-  if (node.branches) {
-    for (const [condition, branch] of Object.entries(node.branches)) {
-      const found = findNodePath(branch, targetId, [...path]);
       if (found) return found;
     }
   }

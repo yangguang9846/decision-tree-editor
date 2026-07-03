@@ -23,14 +23,14 @@ After `pnpm build`, Vite outputs the client to `dist/` and esbuild bundles `serv
 ## Architecture
 
 - **Stack**: Vite 7 + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui (Radix UI)
-- **Source**: `client/src/` (SPA), `server/` (Express static file server), `shared/` (constants)
+- **Source**: `client/src/` (SPA), `server/` (Express static file server)
 - **Build**: Vite root is `client/`, outputs to `dist/` at project root; server is bundled separately with esbuild
 - **Base path**: `/decision-tree-editor/` in production (configured in `vite.config.ts` and `client/src/App.tsx`)
-- **Path aliases**: `@/` → `client/src/`, `@shared/` → `shared/` (configured in both `vite.config.ts` and `tsconfig.json`)
+- **Path aliases**: `@/` → `client/src/` (configured in both `vite.config.ts` and `tsconfig.json`)
 
 ### Routing
 
-Single-route SPA using `wouter`. `App.tsx` wraps the router in `ThemeProvider` (light-only, theme switching disabled), `TooltipProvider`, and `ErrorBoundary`. The base path `/decision-tree-editor/` is set on the wouter `Router`.
+SPA using `wouter` with a `Switch` over `/` (Home), `/404`, and a catch-all fallback (both → `NotFound`). `App.tsx` wraps the router in `ThemeProvider` (light-only, theme switching disabled), `TooltipProvider`, and `ErrorBoundary`. The base path is set via `<Router base="/decision-tree-editor">`.
 
 ### Data Model (`client/src/lib/treeTypes.ts`)
 
@@ -40,19 +40,25 @@ Single-route SPA using `wouter`. `App.tsx` wraps the router in `ThemeProvider` (
 - Single-element tuples get trailing comma: `("818",)` for valid Python syntax
 - Import uses `dictToTree()` which handles JSON, Python dict (booleans, None, single/double quotes), and CSV-exported format (double-double-quotes `""`). Accepts either `decision_tree` or `knowledge_tree` as the tree key
 - Export uses `treeToDict()` which produces a Python dict string with `decision_tree` key and tab-indented formatting
-- Core tree operations: `findNode()`, `findNodePath()`, `deleteNode()`, `cloneNode()` — all work on immutable copies returned by `cloneNode()`
+- Core tree operations (all return immutable copies; most clone via `cloneNode()` before mutating):
+  - `findNode()` — locate a node by id (recursive descent through `branches`)
+  - `deleteNode()` — remove a node and its entire subtree
+  - `spliceNode()` — "delete node only": remove a node but re-parent its children under the grandparent (preserves subtree)
+  - `insertParentAbove()` — wrap a node in a new branch parent (new parent's `else` branch holds the target); if target is root, the new node becomes root
+  - `renameBranchCondition()` — rename a condition key in a parent's `branches` map (refuses to clobber an existing key)
+  - `cloneNode()` — deep clone, the basis for the immutable updates above
 
 ### Key Components
 
 - **`pages/Home.tsx`**: Main page — manages all tree state via `useState`/`useCallback`. Layout: toolbar top, SVG canvas left, right panel (metadata editor + node properties + Python code preview)
-- **`components/TreeVisualizer.tsx`**: SVG-based tree renderer using manual layout algorithm (no D3). Supports node dragging, canvas panning (left/middle/right-click drag on empty space), scroll-wheel zoom toward mouse position, right-click context menu (add child / delete). Uses `ResizeObserver` for container size tracking
+- **`components/TreeVisualizer.tsx`**: SVG-based tree renderer using manual layout algorithm (no D3). Supports node dragging (stored as per-node relative offsets in `nodeOffsets`, not absolute coords), canvas panning (left/middle/right-click drag on empty space), scroll-wheel zoom toward mouse position, and a right-click context menu with four actions: add child branch, insert a branch parent above (`insertParentAbove`), delete node only / keep subtree (`spliceNode`), delete node and subtree (`deleteNode`). Clicking a connection's condition label triggers inline rename (`onEditCondition`). Uses `ResizeObserver` for container size; auto-fits the viewport once on first load, then locks (via `initializedRef`) so auto-fit doesn't fight manual dragging
 - **`components/NodeEditDialog.tsx`**: shadcn Dialog for editing branch node `key` or leaf node `final`
 - **`components/ui/`**: shadcn/ui component library (Radix UI primitives, new-york style)
 - **`lib/exampleData.ts`**: Example tree data — a channel-based customer support flow for avatar/nickname changes
 
 ### Server (`server/index.ts`)
 
-Minimal Express server. In production serves static files from `dist/`; in development proxies from `../dist/`. All routes serve `index.html` for client-side routing. Only used when running `pnpm start`; not used in GitHub Pages deployment.
+Minimal Express server that serves static files and falls back to `index.html` for all routes (client-side routing). Only used by `pnpm start`; **not** used in the GitHub Pages deployment, which is fully static. Note: the server reads static files from `dist/public/` (prod) or `../dist/public/` (dev), but the Vite build actually emits to `dist/` — so `pnpm start` won't find the client assets as-is. GitHub Pages is the real deployment path; treat the Express server as vestigial unless you fix the static path.
 
 ### Vite Config Plugins
 
@@ -63,10 +69,10 @@ The `vite.config.ts` includes several custom plugins:
 
 ### GitHub Pages SPA Setup
 
-- `index.html` contains inline script that strips `/decision-tree-editor/` base path for wouter routing
-- `404.html` captures deep links into `sessionStorage` and redirects to root, where `index.html` restores the path
+- `404.html` captures deep links into `sessionStorage` (`spa_redirect`) and redirects to root
+- `index.html` contains an inline script that restores that saved path via `history.replaceState`; base-path prefix handling itself is done by wouter's `base` prop (the script does not strip the base)
 - `.nojekyll` prevents Jekyll processing
 
 ### Template CSV Format
 
-The `template (2).csv` defines decision trees with `knowledge_tree` key and Python tuple branch keys. Each row is a Q&A pair with `platform_feats`, `game_feats`, and `knowledge_tree` fields. The editor imports/exports this format — import handles both `knowledge_tree` and `decision_tree` keys.
+The `template_new.csv` defines decision trees with `knowledge_tree` key and Python tuple branch keys. Each row is a Q&A pair with `platform_feats`, `game_feats`, and `knowledge_tree` fields. The editor imports/exports this format — import handles both `knowledge_tree` and `decision_tree` keys, normalizing to `decision_tree` internally.
