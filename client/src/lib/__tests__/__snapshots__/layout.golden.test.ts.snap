@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden: 布局算法坐标快照 > offset 偏移生效(拖拽后) > withOffset 1`] = `"branch:root@0.0,0.0 | leaf:x@-280.0,140.0 | leaf:y@100.0,190.0 | leaf:z@280.0,140.0"`;
+
+exports[`golden: 布局算法坐标快照 > 宽树(3 叶子分支)坐标稳定 > wideTree 1`] = `"branch:root@0.0,0.0 | leaf:x@-280.0,140.0 | leaf:y@0.0,140.0 | leaf:z@280.0,140.0"`;
+
+exports[`golden: 布局算法坐标快照 > 嵌套树坐标稳定 > nestedTree 1`] = `"branch:root@0.0,0.0 | leaf:a@-280.0,140.0 | branch:b@140.0,140.0 | leaf:b1@0.0,280.0 | branch:b2@280.0,280.0 | leaf:b2a@280.0,420.0"`;
+
+exports[`golden: 布局算法坐标快照 > 线性链(root→a→b→leaf)坐标稳定 > linearChain 1`] = `"branch:root@0.0,0.0 | branch:a@0.0,140.0 | branch:b@0.0,280.0 | leaf:leaf@0.0,420.0"`;
