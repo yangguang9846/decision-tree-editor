@@ -123,7 +123,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-foreground flex flex-col">
+    <div className="h-screen overflow-hidden bg-slate-900 text-foreground flex flex-col">
       {/* 顶部工具栏 */}
       <div className="bg-slate-800 border-b border-slate-700 px-6 py-3 flex items-center justify-between gap-4 flex-shrink-0">
         <div>
@@ -154,9 +154,9 @@ export default function Home() {
       </div>
 
       {/* 主区域 */}
-      <div className="flex-1 flex overflow-hidden gap-0">
+      <div className="flex-1 min-h-0 flex overflow-hidden gap-0">
         {/* 左侧：画布 */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col">
           {!tree ? (
             <div className="flex-1 flex items-center justify-center bg-slate-900">
               <div className="text-center">
@@ -183,7 +183,7 @@ export default function Home() {
         </div>
 
         {/* 右侧面板 */}
-        <div className="w-80 bg-slate-800 border-l border-slate-700 flex flex-col overflow-y-auto flex-shrink-0">
+        <div className="w-80 min-h-0 bg-slate-800 border-l border-slate-700 flex flex-col overflow-y-auto flex-shrink-0">
           {/* 树的元信息 */}
           <div className="p-4 border-b border-slate-700">
             <h2 className="text-sm font-bold text-cyan-400 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
