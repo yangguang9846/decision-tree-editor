@@ -1,7 +1,8 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { TreeNode } from '@/lib/treeTypes';
 import {
   calculateLayout,
+  calculateFitTransform,
   type NodeLayout,
 } from '@/lib/layout';
 
@@ -43,8 +44,9 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
     setContainerSize(prev => (prev.w === w && prev.h === h ? prev : { w, h }));
   }, []);
 
-  // Track container size
-  useEffect(() => {
+  // Measure before the first paint so the canvas never renders with the default
+  // zoom/pan before the initial fit is available.
+  useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(entries => {
@@ -53,7 +55,8 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
       }
     });
     ro.observe(el);
-    updateContainerSize(el.clientWidth, el.clientHeight);
+    const rect = el.getBoundingClientRect();
+    updateContainerSize(rect.width, rect.height);
     return () => ro.disconnect();
   }, [updateContainerSize]);
 
@@ -79,21 +82,12 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
   // Initialize zoom/pan to fit the tree in the container (first load only)
   useLayoutEffect(() => {
     if (initializedRef.current) return;
-    if (treeBBox.w === 0 || treeBBox.h === 0) return;
-    const cw = containerSize.w;
-    const ch = containerSize.h;
-    if (cw === 0 || ch === 0) return;
+    const fitTransform = calculateFitTransform(treeBBox, containerSize);
+    if (!fitTransform) return;
 
-    const scaleX = cw / treeBBox.w;
-    const scaleY = ch / treeBBox.h;
-    const fitScale = Math.min(scaleX, scaleY, 1) * 0.9;
-
-    const offsetX = (cw - treeBBox.w * fitScale) / 2 - treeBBox.x * fitScale;
-    const offsetY = (ch - treeBBox.h * fitScale) / 2 - treeBBox.y * fitScale;
-
-    setZoom(fitScale);
-    setPanX(offsetX);
-    setPanY(offsetY);
+    setZoom(fitTransform.zoom);
+    setPanX(fitTransform.panX);
+    setPanY(fitTransform.panY);
     initializedRef.current = true;
   }, [treeBBox, containerSize]);
 

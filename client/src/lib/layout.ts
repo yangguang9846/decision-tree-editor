@@ -34,6 +34,43 @@ export interface Offsets {
   [id: string]: { x: number; y: number };
 }
 
+export interface TreeBounds {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface ContainerSize {
+  w: number;
+  h: number;
+}
+
+export interface FitTransform {
+  zoom: number;
+  panX: number;
+  panY: number;
+}
+
+export function calculateFitTransform(
+  treeBBox: TreeBounds,
+  containerSize: ContainerSize,
+): FitTransform | null {
+  if (treeBBox.w <= 0 || treeBBox.h <= 0 || containerSize.w <= 0 || containerSize.h <= 0) {
+    return null;
+  }
+
+  const scaleX = containerSize.w / treeBBox.w;
+  const scaleY = containerSize.h / treeBBox.h;
+  const zoom = Math.min(scaleX, scaleY, 1) * 0.9;
+
+  return {
+    zoom,
+    panX: (containerSize.w - treeBBox.w * zoom) / 2 - treeBBox.x * zoom,
+    panY: (containerSize.h - treeBBox.h * zoom) / 2 - treeBBox.y * zoom,
+  };
+}
+
 interface LayoutResult {
   layout: NodeLayout;
   width: number;
