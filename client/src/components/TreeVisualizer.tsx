@@ -1,11 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { TreeNode } from '@/lib/treeTypes';
 import {
   calculateLayout,
   type NodeLayout,
-  type Offsets,
-  NODE_WIDTH,
-  NODE_HEIGHT,
 } from '@/lib/layout';
 
 interface TreeVisualizerProps {
@@ -30,10 +27,8 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
   onEditCondition,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [nodeLayout, setNodeLayout] = useState<NodeLayout>({});
-  const [treeBBox, setTreeBBox] = useState({ x: 0, y: 0, w: 1400, h: 900 });
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
-  const [containerSize, setContainerSize] = useState({ w: 1200, h: 800 });
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
@@ -44,38 +39,45 @@ export const TreeVisualizer: React.FC<TreeVisualizerProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const initializedRef = useRef(false);
 
+  const updateContainerSize = useCallback((w: number, h: number) => {
+    setContainerSize(prev => (prev.w === w && prev.h === h ? prev : { w, h }));
+  }, []);
+
   // Track container size
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(entries => {
       for (const entry of entries) {
-        setContainerSize({ w: entry.contentRect.width, h: entry.contentRect.height });
+        updateContainerSize(entry.contentRect.width, entry.contentRect.height);
       }
     });
     ro.observe(el);
-    setContainerSize({ w: el.clientWidth, h: el.clientHeight });
+    updateContainerSize(el.clientWidth, el.clientHeight);
     return () => ro.disconnect();
-  }, []);
+  }, [updateContainerSize]);
 
-  // Compute layout and bounding box
-  useEffect(() => {
-    const result = calculateLayout(tree, 0, 0, {}, nodeOffsets);
-    setNodeLayout(result.layout);
+  // Layout and bounds are derived from the tree. Keeping them out of state
+  // avoids an extra render/effect cycle every time the tree is mounted.
+  const nodeLayout = useMemo<NodeLayout>(() => {
+    return calculateLayout(tree, 0, 0, {}, nodeOffsets).layout;
+  }, [tree, nodeOffsets]);
 
+  const treeBBox = useMemo(() => {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    Object.values(result.layout).forEach(pos => {
+    Object.values(nodeLayout).forEach(pos => {
       minX = Math.min(minX, pos.x);
       maxX = Math.max(maxX, pos.x + pos.width);
       minY = Math.min(minY, pos.y);
       maxY = Math.max(maxY, pos.y + pos.height);
     });
+
     const pad = 60;
-    setTreeBBox({ x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 });
-  }, [tree, nodeOffsets]);
+    return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
+  }, [nodeLayout]);
 
   // Initialize zoom/pan to fit the tree in the container (first load only)
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (initializedRef.current) return;
     if (treeBBox.w === 0 || treeBBox.h === 0) return;
     const cw = containerSize.w;
